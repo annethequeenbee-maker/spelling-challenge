@@ -92,13 +92,30 @@ async function loadDashboard() {
   showSkeleton();
   const className = document.getElementById('classSelect').value;
   const qs = new URLSearchParams({ action: 'getDashboard', className });
+  const url = GAS_URL + '?' + qs.toString();
+  
   try {
-    const res = await fetch(GAS_URL + '?' + qs.toString());
+    const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    if (data.success) render(data);
+    if (data.success) {
+      render(data);
+    } else {
+      showError('GAS 錯誤：' + (data.error || '未知'));
+    }
   } catch(e) {
-    document.getElementById('heatmap').innerHTML = '<p class="text-red-500 text-sm">載入失敗</p>';
+    showError('無法載入：' + e.message + '<br><small class="text-gray-400">請確認 GAS 已部署並包含 getDashboard 端點</small>');
   }
+}
+
+function showError(msg) {
+  document.getElementById('heatmap').innerHTML = '<p class="text-red-500 text-sm">' + msg + '</p>';
+  document.getElementById('summaryTable').innerHTML = '<p class="text-red-500 text-sm">' + msg + '</p>';
+  document.getElementById('recordsTable').innerHTML = '<p class="text-red-500 text-sm">' + msg + '</p>';
+  ['stat-games','stat-students','stat-avg','stat-words'].forEach(id => {
+    document.getElementById(id).className = 'stat-num';
+    document.getElementById(id).textContent = '!';
+  });
 }
 
 function showSkeleton() {
