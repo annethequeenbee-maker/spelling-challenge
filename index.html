@@ -324,11 +324,12 @@ body { font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background
 
 <script>
 // ============================================================
-// CONFIG — Supabase
+// CONFIG — Supabase + Google Sheet
 // ============================================================
 const SUPABASE_URL = 'https://ngyhbvvjcmuwujufyche.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_-kg258b_zjzHRkT96c1PjA_BD8Au2Pb';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const GAS_SHEET_URL = 'YOUR_GAS_SHEET_URL';  // 填入 Google Sheet 用的 GAS 網址
 
 // ============================================================
 // WORD DATA
@@ -442,7 +443,8 @@ function getCurrentData() {
 // API — Supabase
 // ============================================================
 async function saveScore() {
-  const { error } = await sb.from('game_records').insert({
+  // 寫入 Supabase（遊戲主要後端）
+  sb.from('game_records').insert({
     class_name: state.className,
     student_name: state.studentName,
     student_id: state.studentName,
@@ -451,8 +453,26 @@ async function saveScore() {
     max_score: state.maxScore,
     game_time_seconds: state.totalTime,
     mistakes: state.mistakes,
-  });
-  return { success: !error };
+  }).then(r => { if (r.error) console.error('Supabase:', r.error); });
+
+  // 同步寫入 Google Sheet（老師方便看的後台）
+  if (GAS_SHEET_URL && GAS_SHEET_URL !== 'YOUR_GAS_SHEET_URL') {
+    const qs = new URLSearchParams({
+      action: 'saveScore',
+      className: state.className,
+      studentName: state.studentName,
+      questionCount: state.questionCount,
+      score: state.score,
+      maxScore: state.maxScore,
+      timeSec: state.totalTime,
+      mistakes: JSON.stringify(state.mistakes),
+    });
+    try {
+      await fetch(GAS_SHEET_URL + '?' + qs.toString(), { method: 'POST' });
+    } catch(e) { console.error('Sheet sync:', e); }
+  }
+
+  return { success: true };
 }
 
 async function loadLeaderboard() {
