@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>星期單字拼寫挑戰 — 雙人對決</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background: #1a1a2e; margin: 0; padding: 0; color: #333; user-select: none; -webkit-user-select: none; }
+.screen { display: none; }
+.screen.active { display: block; }
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 20px; border-radius: 10px; font-size: 1em; font-weight: bold; border: none; cursor: pointer; gap: 6px; font-family: inherit; transition: all 0.15s; }
+.btn:active { transform: scale(0.95); }
+.btn-blue { background: #2d6cb5; color: #fff; }
+.btn-green { background: #389e47; color: #fff; }
+.btn-orange { background: #e07b20; color: #fff; }
+.btn-red { background: #d32f2f; color: #fff; }
+.btn-gray { background: #6b7280; color: #fff; }
+.btn-outline { background: #fff; border: 2px solid #2d6cb5; color: #2d6cb5; }
+.btn-lg { padding: 16px 28px; font-size: 1.15em; border-radius: 12px; }
+
+/* Entry */
+#screen-entry { padding: 40px 16px; text-align: center; background: linear-gradient(180deg, #0f3460 0%, #1a1a2e 100%); color: #fff; min-height: 100vh; }
+#screen-entry h1 { font-size: 1.6em; margin: 0 0 6px; letter-spacing: 3px; }
+#screen-entry .vs { font-size: 1.4em; margin: 10px 0; color: #fbbf24; font-weight: bold; }
+.entry-input { width: 100%; padding: 12px; border: 2px solid #334155; border-radius: 10px; font-size: 1em; text-align: center; background: #1e293b; color: #fff; font-family: inherit; }
+.entry-input::placeholder { color: #94a3b8; }
+.entry-input:focus { outline: none; border-color: #fbbf24; }
+.round-btn { padding: 10px 14px; border-radius: 10px; border: 2px solid #475569; background: #1e293b; color: #94a3b8; cursor: pointer; font-size: 0.9em; font-family: inherit; transition: all 0.15s; }
+.round-btn.active { border-color: #fbbf24; color: #fbbf24; }
+
+/* Game Area */
+#screen-game { min-height: 100vh; background: #1a1a2e; }
+.top-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 10px; background: #0f3460; color: #fff; font-size: 0.95em; position: sticky; top: 0; z-index: 10; height: 50px; }
+.top-bar .round { font-weight: bold; color: #fbbf24; }
+.top-bar .speak-btn, .top-bar .slow-btn { padding: 6px 12px; border-radius: 20px; border: none; cursor: pointer; font-size: 0.85em; font-family: inherit; color: #fff; }
+.top-bar .speak-btn { background: #2d6cb5; }
+.top-bar .slow-btn { background: #475569; }
+.split { display: grid; grid-template-columns: 1fr 1fr; min-height: calc(100vh - 50px); }
+.player-col { display: flex; flex-direction: column; padding: 8px; position: relative; overflow-y: auto; }
+.player-col.p1 { border-right: 2px solid #334155; }
+.p-name { text-align: center; font-weight: bold; padding: 8px; color: #fff; font-size: 0.95em; border-radius: 8px; margin-bottom: 8px; }
+.p1 .p-name { background: #2d6cb5; }
+.p2 .p-name { background: #d32f2f; }
+.p-score { text-align: center; font-size: 1.4em; font-weight: bold; padding: 4px; color: #fbbf24; }
+
+/* Stage content */
+.s1-options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.s1-opt { padding: 14px 6px; border: 2px solid #475569; border-radius: 8px; text-align: center; font-size: 0.95em; font-weight: bold; cursor: pointer; background: #1e293b; color: #e2e8f0; transition: all 0.1s; }
+.s1-opt:active { transform: scale(0.95); }
+.s1-opt.selected { border-color: #fbbf24; background: #334155; }
+.s1-opt.correct { border-color: #22c55e; background: #14532d; color: #86efac; }
+.s1-opt.wrong { border-color: #ef4444; background: #450a0a; color: #fca5a5; }
+.s1-opt.locked { pointer-events: none; opacity: 0.7; }
+
+.s2-boxes { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 8px 0; min-height: 48px; }
+.s2-box { width: 60px; height: 44px; border: 2px dashed #475569; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9em; font-weight: bold; cursor: pointer; background: #1e293b; color: #94a3b8; }
+.s2-box.filled { border-style: solid; border-color: #fbbf24; color: #e2e8f0; background: #334155; }
+.s2-box.correct { border-color: #22c55e; background: #14532d; color: #86efac; }
+.s2-cards { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 6px 0; }
+.s2-card { padding: 8px 12px; border-radius: 8px; background: #334155; color: #e2e8f0; font-size: 0.9em; font-weight: bold; cursor: pointer; border: 2px solid transparent; }
+.s2-card:active { transform: scale(0.95); }
+.s2-card.used { opacity: 0.3; pointer-events: none; }
+
+.s3-input { width: 100%; padding: 10px; font-size: 1.1em; text-align: center; border: 2px solid #475569; border-radius: 8px; letter-spacing: 2px; font-family: 'Courier New', monospace; background: #1e293b; color: #e2e8f0; }
+.s3-input:focus { outline: none; border-color: #fbbf24; }
+.s3-input.correct { border-color: #22c55e; background: #14532d; }
+.s3-input.wrong { border-color: #ef4444; background: #450a0a; }
+
+.s3-keyboard { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 8px; }
+.s3-key { width: 36px; height: 36px; border-radius: 6px; border: none; background: #334155; color: #e2e8f0; font-size: 0.9em; font-weight: bold; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; }
+.s3-key:active { background: #fbbf24; color: #000; }
+.s3-key.action { background: #ef4444; width: 52px; }
+.s3-key.submit { background: #22c55e; width: 52px; }
+
+.s3-bubbles { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
+.s3-bubble { padding: 10px 14px; border-radius: 20px; background: #fbbf24; color: #000; font-size: 1.2em; font-weight: bold; cursor: pointer; border: 2px solid #d97706; transition: all 0.1s; }
+.s3-bubble:active { transform: scale(0.9); }
+
+.stage-label { text-align: center; font-size: 0.8em; color: #94a3b8; margin-bottom: 6px; }
+.stage-hint { text-align: center; font-size: 0.75em; color: #fbbf24; margin-bottom: 4px; min-height: 1.2em; }
+.check-btn { margin-top: 8px; text-align: center; }
+
+/* Ready Screen */
+#screen-ready { padding: 60px 16px; text-align: center; min-height: 100vh; background: #0f3460; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+#screen-ready .countdown { font-size: 6em; font-weight: bold; color: #fbbf24; }
+
+/* Word Result */
+#screen-word-result { padding: 20px; background: #1a1a2e; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.wr-card { background: #1e293b; border-radius: 14px; padding: 20px; max-width: 440px; width: 100%; }
+
+/* Final Result */
+#screen-final { padding: 20px; min-height: 100vh; background: #1a1a2e; color: #fff; }
+.champion { text-align: center; font-size: 1.8em; font-weight: bold; color: #fbbf24; margin: 16px 0; }
+.compare-row { display: flex; gap: 10px; margin: 6px 0; }
+.compare-col { flex: 1; padding: 10px; border-radius: 10px; background: #1e293b; font-size: 0.85em; }
+.compare-col.p1 { border-left: 4px solid #2d6cb5; }
+.compare-col.p2 { border-left: 4px solid #d32f2f; }
+.mistake-red { color: #fca5a5; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- ===== ENTRY SCREEN ===== -->
+<div id="screen-entry" class="screen active">
+  <h1>⚔️ 單字對決</h1>
+  <p style="color:#94a3b8;margin:4px 0 24px;">星期單字拼寫挑戰</p>
+  <div style="max-width:300px;margin:0 auto;display:flex;flex-direction:column;gap:12px;">
+    <div>
+      <input class="entry-input" id="d-class" placeholder="班級（例：五年一班）">
+    </div>
+    <div>
+      <input class="entry-input" id="d-p1" placeholder="選手 1 姓名">
+    </div>
+    <div class="vs">VS</div>
+    <div>
+      <input class="entry-input" id="d-p2" placeholder="選手 2 姓名">
+    </div>
+    <p style="font-size:0.85em;color:#94a3b8;margin:6px 0 0;">選擇局數：</p>
+    <div style="display:flex;gap:8px;">
+      <button class="round-btn active" data-r="3" onclick="selectRounds(3)">搶 3 勝</button>
+      <button class="round-btn" data-r="5" onclick="selectRounds(5)">搶 5 勝</button>
+      <button class="round-btn" data-r="7" onclick="selectRounds(7)">7 題戰</button>
+    </div>
+    <button class="btn btn-orange btn-lg" onclick="startDuel()" style="margin-top:8px;width:100%;">⚡ 開始對決</button>
+  </div>
+</div>
+
+<!-- ===== READY SCREEN ===== -->
+<div id="screen-ready" class="screen">
+  <p style="font-size:1.2em;color:#94a3b8;">準備！</p>
+  <div class="countdown" id="countdown-text">3</div>
+  <p style="font-size:1em;">第 <span id="ready-round">1</span> 回合</p>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="screen-game" class="screen">
+  <div class="top-bar">
+    <button class="slow-btn" onclick="speakSlow()">🐢</button>
+    <button class="speak-btn" onclick="speakWord(currentWord)">🔊 聽發音</button>
+    <span class="round" id="game-round">1/3</span>
+  </div>
+  <div class="split">
+    <div class="player-col p1" id="col-p1">
+      <div class="p-name" id="pn-p1">P1</div>
+      <div class="p-score" id="ps-p1">0 勝</div>
+      <div class="stage-label" id="sl-p1"></div>
+      <div class="stage-hint" id="sh-p1"></div>
+      <div id="p1-stage"></div>
+    </div>
+    <div class="player-col p2" id="col-p2">
+      <div class="p-name" id="pn-p2">P2</div>
+      <div class="p-score" id="ps-p2">0 勝</div>
+      <div class="stage-label" id="sl-p2"></div>
+      <div class="stage-hint" id="sh-p2"></div>
+      <div id="p2-stage"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WORD RESULT SCREEN ===== -->
+<div id="screen-word-result" class="screen">
+  <div class="wr-card">
+    <p style="font-size:1.2em;font-weight:bold;color:#fbbf24;margin-bottom:12px;" id="wr-title">🔄 下一題</p>
+    <p style="font-size:1.6em;font-weight:bold;margin:8px 0;" id="wr-word"></p>
+    <div class="compare-row">
+      <div class="compare-col p1">
+        <div style="font-weight:bold;margin-bottom:4px;" id="wr-p1n">P1</div>
+        <div id="wr-p1d"></div>
+      </div>
+      <div class="compare-col p2">
+        <div style="font-weight:bold;margin-bottom:4px;" id="wr-p2n">P2</div>
+        <div id="wr-p2d"></div>
+      </div>
+    </div>
+    <button class="btn btn-blue btn-lg" onclick="nextRound()" style="margin-top:16px;width:100%;" id="btn-next-round">▶ 下一題</button>
+  </div>
+</div>
+
+<!-- ===== FINAL RESULT SCREEN ===== -->
+<div id="screen-final" class="screen">
+  <div class="champion" id="final-champion"></div>
+  <div style="max-width:460px;margin:0 auto;">
+    <p style="text-align:center;font-size:1.1em;font-weight:bold;color:#94a3b8;margin-bottom:10px;">📊 對決結果</p>
+    <div class="compare-row">
+      <div class="compare-col p1">
+        <div style="font-weight:bold;font-size:1.1em;margin-bottom:6px;" id="fp-p1n">P1</div>
+        <div id="fp-p1s">0 勝</div>
+      </div>
+      <div class="compare-col p2">
+        <div style="font-weight:bold;font-size:1.1em;margin-bottom:6px;" id="fp-p2n">P2</div>
+        <div id="fp-p2s">0 勝</div>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:0.95em;color:#94a3b8;margin:14px 0 6px;">🔍 錯字對比</p>
+    <div id="final-compare" style="font-size:0.85em;"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-orange btn-lg" onclick="restartDuel()" style="flex:1;">⚔️ 再戰一場</button>
+      <button class="btn btn-gray btn-lg" onclick="location.reload()" style="flex:1;">↩ 換人</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// WORD DATA
+// ============================================================
+const WORD_DATA = {
+  Sunday:    { cn:'星期天', syllables:['Sun','day'], distractors:['Sanday','Sundey','Sundai'], hintS1:'S開頭，2音節', hintS2:'Sun 是太陽', hintS3:'S u n d a y' },
+  Monday:    { cn:'星期一', syllables:['Mon','day'], distractors:['Munday','Manday','Mondy'], hintS1:'M開頭，o短音', hintS2:'Mon 像 Moon', hintS3:'M o n d a y' },
+  Tuesday:   { cn:'星期二', syllables:['Tues','day'], distractors:['Tusday','Teusday','Tusdey'], hintS1:'T開頭，有ue', hintS2:'Tues 發 /tuz/', hintS3:'T u e s d a y' },
+  Wednesday: { cn:'星期三', syllables:['Wed','nes','day'], distractors:['Wensday','Wenesday','Wednsday'], hintS1:'W開頭，3音節', hintS2:'Wed-nes-day', hintS3:'W e d n e s d a y' },
+  Thursday:  { cn:'星期四', syllables:['Thurs','day'], distractors:['Thrusday','Thesday','Thirsday'], hintS1:'Th開頭，ur捲舌', hintS2:'Th-urs-day', hintS3:'T h u r s d a y' },
+  Friday:    { cn:'星期五', syllables:['Fri','day'], distractors:['Fryday','Frieday','Fiday'], hintS1:'F開頭，r跟i', hintS2:'Fri 像 Free', hintS3:'F r i d a y' },
+  Saturday:  { cn:'星期六', syllables:['Sat','ur','day'], distractors:['Saterday','Saturdai','Saterdei'], hintS1:'S開頭，3音節', hintS2:'Sat-ur-day', hintS3:'S a t u r d a y' },
+};
+
+const ALL_WORDS = Object.keys(WORD_DATA);
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbylPnrO8L6y4GK8QfQdCbCPjpEqOQpPXm6VqMMOyecesr9PA6GKzx66cQyKWk3xf2zU/exec';
+
+let state = {};
+
+// ============================================================
+// INIT
+// ============================================================
+function $(id) { return document.getElementById(id); }
+function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function showScreen(id) { document.querySelectorAll('.screen').forEach(el => el.classList.remove('active')); $(id).classList.add('active'); }
+
+// ============================================================
+// SPEECH
+// ============================================================
+function speakWord(word) {
+  if (!window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(word);
+  u.lang = 'en-US'; u.rate = 0.85;
+  speechSynthesis.cancel();
+  setTimeout(() => speechSynthesis.speak(u), 100);
+}
+function speakSlow() {
+  if (!window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(state.currentWord);
+  u.lang = 'en-US'; u.rate = 0.55;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+// ============================================================
+// ENTRY
+// ============================================================
+let selectedRounds = 3;
+function selectRounds(n) {
+  selectedRounds = n;
+  document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-r="${n}"]`).classList.add('active');
+}
+
+function startDuel() {
+  const cls = $('d-class').value.trim();
+  const p1  = $('d-p1').value.trim();
+  const p2  = $('d-p2').value.trim();
+  if (!cls || !p1 || !p2) return alert('請填寫班級和兩位選手姓名');
+
+  state = {
+    className: cls,
+    player1: { name: p1, score: 0, wins: 0, mistakes: [] },
+    player2: { name: p2, score: 0, wins: 0, mistakes: [] },
+    roundFormat: selectedRounds,
+    totalRounds: selectedRounds, // for 3/5, total is same; for 7, it's battle
+    rounds: [],
+    currentRound: 0,
+    currentWord: '',
+    currentStage: 1,
+    started: false,
+  };
+
+  // Generate word list
+  if (selectedRounds === 7) {
+    state.rounds = shuffle(ALL_WORDS.slice()).slice(0, 7);
+  } else {
+    const pool = [...ALL_WORDS, ...ALL_WORDS];
+    state.rounds = shuffle(pool).slice(0, selectedRounds + 6); // extra for tie
+    state.totalRounds = 99; // play until someone reaches target
+    state.targetWins = selectedRounds;
+  }
+
+  // Set names on UI
+  $('pn-p1').textContent = state.player1.name;
+  $('pn-p2').textContent = state.player2.name;
+
+  showReadyScreen();
+}
+
+// ============================================================
+// READY SCREEN
+// ============================================================
+function showReadyScreen() {
+  state.currentStage = 1;
+  showScreen('ready');
+  const rd = state.currentRound + 1;
+  $('ready-round').textContent = rd;
+
+  let count = 3;
+  $('countdown-text').textContent = count;
+  const iv = setInterval(() => {
+    count--;
+    if (count > 0) {
+      $('countdown-text').textContent = count;
+    } else {
+      $('countdown-text').textContent = 'GO!';
+      clearInterval(iv);
+      setTimeout(() => startRound(), 600);
+    }
+  }, 700);
+}
+
+// ============================================================
+// START ROUND
+// ============================================================
+function startRound() {
+  const w = state.rounds[state.currentRound];
+  state.currentWord = w;
+  state.player1.score = 0;
+  state.player2.score = 0;
+  state.currentStage = 1;
+  state.stage1Results = {}; // 'p1'|'p2' → { correct, time, answer }
+  state.stage2Results = {};
+  state.stage3Results = {};
+  state.stageStartTime = Date.now();
+
+  resetGameUI();
+  $('game-round').textContent = `${state.currentRound + 1}/${state.totalRounds <= 99 ? state.totalRounds : '?'}`;
+  $('ps-p1').textContent = state.player1.wins + ' 勝';
+  $('ps-p2').textContent = state.player2.wins + ' 勝';
+  showScreen('game');
+
+  buildStage(1);
+  setTimeout(() => speakWord(w), 500);
+}
+
+function resetGameUI() {
+  ['p1-stage','p2-stage','sl-p1','sl-p2','sh-p1','sh-p2'].forEach(id => $(id).innerHTML = '');
+  // Reset per-player state
+  ['p1','p2'].forEach(pid => {
+    state[pid] = state[pid] || {};
+    state[pid]._s3attempts = 0;
+    state[pid]._s3bubbles = false;
+    state[pid]._s2slots = [];
+    state[pid]._s2used = [];
+  });
+}
+
+// ============================================================
+// BUILD STAGE
+// ============================================================
+function buildStage(stage) {
+  state.currentStage = stage;
+  const w = state.currentWord;
+  const data = WORD_DATA[w];
+
+  ['p1','p2'].forEach(pid => {
+    const el = $(pid + '-stage');
+    const sl = $(pid === 'p1' ? 'sl-p1' : 'sl-p2');
+
+    if (stage === 1) buildStage1(el, w, data, pid);
+    else if (stage === 2) buildStage2(el, w, data, pid);
+    else if (stage === 3) buildStage3(el, w, data, pid);
+
+    sl.textContent = `關卡 ${stage}/3 • ${data.cn}`;
+  });
+}
+
+// ============================================================
+// STAGE 1
+// ============================================================
+function buildStage1(el, w, data, pid) {
+  const options = shuffle([w, ...data.distractors]);
+  state[pid]._s1options = options;
+  state[pid]._s1selected = null;
+
+  el.innerHTML = `
+    <div class="s1-options" id="${pid}-s1opts">
+      ${options.map((opt, i) => `
+        <div class="s1-opt" onclick="selectS1('${pid}',${i})">${opt}</div>
+      `).join('')}
+    </div>
+    <div class="check-btn">
+      <button class="btn btn-blue" id="${pid}-s1check" disabled onclick="checkS1('${pid}')">確認答案</button>
+    </div>
+  `;
+
+  state[pid]._s1time = Date.now();
+}
+
+function selectS1(pid, idx) {
+  if (state[pid]._s1locked) return;
+  state[pid]._s1selected = idx;
+  const opts = document.querySelectorAll('#' + pid + '-s1opts .s1-opt');
+  opts.forEach(el => el.classList.remove('selected'));
+  opts[idx].classList.add('selected');
+  $(pid + '-s1check').disabled = false;
+}
+
+function checkS1(pid) {
+  if (state[pid]._s1selected === null || state[pid]._s1locked) return;
+  state[pid]._s1locked = true;
+
+  const chosen = state[pid]._s1options[state[pid]._s1selected];
+  const correct = chosen === state.currentWord;
+  const time = ((Date.now() - state[pid]._s1time) / 1000).toFixed(1);
+
+  const opts = document.querySelectorAll('#' + pid + '-s1opts .s1-opt');
+  opts.forEach(el => el.classList.add('locked'));
+  opts[state[pid]._s1selected].classList.add(correct ? 'correct' : 'wrong');
+
+  // Highlight correct answer
+  if (!correct) {
+    state[pid]._s1options.forEach((o, i) => {
+      if (o === state.currentWord) opts[i].classList.add('correct');
+    });
+  }
+
+  state[pid]._s1result = { correct, time, answer: chosen };
+
+  // Score: 3 pts for correct
+  const scoreFor = pid === 'p1' ? 'player1' : 'player2';
+  if (correct) state[scoreFor].score += 3;
+
+  $(pid + '-s1check').remove();
+
+  checkBothDone(1, pid);
+}
+
+// ============================================================
+// STAGE 2
+// ============================================================
+function buildStage2(el, w, data, pid) {
+  const syls = shuffle([...data.syllables]);
+  state[pid]._s2syllables = syls;
+  state[pid]._s2slots = [];
+  state[pid]._s2used = [];
+  state[pid]._s2time = Date.now();
+  state[pid]._s2locked = false;
+
+  el.innerHTML = `
+    <div class="s2-boxes" id="${pid}-s2boxes">
+      ${syls.map(() => `<div class="s2-box" onclick="popSlot('${pid}',this)"></div>`).join('')}
+    </div>
+    <div class="s2-cards" id="${pid}-s2cards">
+      ${syls.map((s, i) => `<div class="s2-card" onclick="pushSlot('${pid}',${i})">${s}</div>`).join('')}
+    </div>
+    <div class="check-btn">
+      <button class="btn btn-blue" id="${pid}-s2check" disabled onclick="checkS2('${pid}')">確認順序</button>
+    </div>
+  `;
+}
+
+function pushSlot(pid, cardIdx) {
+  if (state[pid]._s2locked || state[pid]._s2used.includes(cardIdx)) return;
+  const boxes = document.querySelectorAll('#' + pid + '-s2boxes .s2-box');
+  const emptyIdx = state[pid]._s2slots.length;
+  if (emptyIdx >= boxes.length) return;
+
+  const syl = state[pid]._s2syllables[cardIdx];
+  state[pid]._s2slots.push({ cardIdx, syl });
+  state[pid]._s2used.push(cardIdx);
+  boxes[emptyIdx].textContent = syl;
+  boxes[emptyIdx].classList.add('filled');
+
+  const cardEls = document.querySelectorAll('#' + pid + '-s2cards .s2-card');
+  cardEls[cardIdx].classList.add('used');
+
+  if (state[pid]._s2slots.length === boxes.length) {
+    $(pid + '-s2check').disabled = false;
+  }
+}
+
+function popSlot(pid, boxEl) {
+  if (state[pid]._s2locked) return;
+  const boxes = document.querySelectorAll('#' + pid + '-s2boxes .s2-box');
+  const idx = Array.from(boxes).indexOf(boxEl);
+  if (idx < 0 || !boxEl.textContent) return;
+
+  const slot = state[pid]._s2slots[idx];
+  if (!slot) return;
+  state[pid]._s2slots.splice(idx, 1);
+  state[pid]._s2used = state[pid]._s2used.filter(i => i !== slot.cardIdx);
+
+  const cardEls = document.querySelectorAll('#' + pid + '-s2cards .s2-card');
+  cardEls[slot.cardIdx].classList.remove('used');
+
+  // Redraw boxes
+  boxes.forEach((b, i) => {
+    b.textContent = state[pid]._s2slots[i] ? state[pid]._s2slots[i].syl : '';
+    if (!state[pid]._s2slots[i]) b.classList.remove('filled');
+  });
+
+  $(pid + '-s2check').disabled = true;
+}
+
+function checkS2(pid) {
+  if (state[pid]._s2locked) return;
+  state[pid]._s2locked = true;
+  const time = ((Date.now() - state[pid]._s2time) / 1000).toFixed(1);
+
+  const boxes = document.querySelectorAll('#' + pid + '-s2boxes .s2-box');
+  const correctSyls = WORD_DATA[state.currentWord].syllables;
+  const built = state[pid]._s2slots.map(s => s.syl);
+  const correct = built.join('') === correctSyls.join('');
+  const answer = built.join('-') || '-';
+
+  boxes.forEach((b, i) => {
+    if (built[i] === correctSyls[i]) b.classList.add('correct');
+    b.style.pointerEvents = 'none';
+  });
+
+  const cardEls = document.querySelectorAll('#' + pid + '-s2cards .s2-card');
+  cardEls.forEach(el => el.classList.add('used'));
+
+  state[pid]._s2result = { correct, time, answer };
+
+  const scoreFor = pid === 'p1' ? 'player1' : 'player2';
+  if (correct) state[scoreFor].score += 3;
+
+  $(pid + '-s2check').className = 'btn btn-gray';
+  $(pid + '-s2check').textContent = correct ? '✓ 正確' : '✗ 錯誤';
+  $(pid + '-s2check').disabled = true;
+
+  checkBothDone(2, pid);
+}
+
+// ============================================================
+// STAGE 3 — 自適應提示
+// ============================================================
+function buildStage3(el, w, data, pid) {
+  state[pid]._s3attempts = 0;
+  state[pid]._s3bubbles = false;
+  state[pid]._s3time = Date.now();
+  state[pid]._s3locked = false;
+  state[pid]._s3usedLetters = '';
+
+  const hintEl = $(pid === 'p1' ? 'sh-p1' : 'sh-p2');
+  hintEl.textContent = '';
+  renderS3(el, pid, false);
+}
+
+function renderS3(el, pid, bubbleMode) {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  state[pid]._s3bubbles = bubbleMode;
+  state[pid]._s3usedLetters = '';
+
+  let keyboardHTML = '';
+  if (bubbleMode) {
+    const word = state.currentWord;
+    const needed = [...new Set(word.split(''))];
+    const distractors = shuffle(letters.filter(l => !needed.includes(l))).slice(0, 3);
+    const pool = shuffle([...needed, ...distractors]);
+    keyboardHTML = `
+      <div class="s3-bubbles" id="${pid}-s3bubbles">
+        ${pool.map(l => `<span class="s3-bubble" onclick="bubbleTap('${pid}','${l}')">${l}</span>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;">
+        <button class="btn btn-red" style="padding:8px 16px;font-size:0.9em;" onclick="s3Delete('${pid}')">⬅️ 刪除</button>
+        <button class="btn btn-blue" style="padding:8px 16px;font-size:0.9em;" onclick="checkS3('${pid}')">✔️ 送出</button>
+      </div>
+    `;
+  } else {
+    const rows = [letters.slice(0,10), letters.slice(10,19), letters.slice(19,26)];
+    keyboardHTML = rows.map(row => `
+      <div class="s3-keyboard">${row.map(l => `<button class="s3-key" onclick="keyTap('${pid}','${l}')">${l}</button>`).join('')}</div>
+    `).join('') + `
+      <div class="s3-keyboard">
+        <button class="s3-key action" onclick="s3Delete('${pid}')">⬅</button>
+        <button class="s3-key" style="min-width:60px;" onclick="s3Space('${pid}')">_</button>
+        <button class="s3-key submit" onclick="checkS3('${pid}')">✔</button>
+      </div>
+    `;
+  }
+
+  el.innerHTML = `
+    <div class="s3-input" id="${pid}-s3input" readonly>_</div>
+    ${keyboardHTML}
+    ${bubbleMode ? '' : '<div style="text-align:center;margin-top:6px;font-size:0.75em;color:#94a3b8;">點字母拼單字，開頭大寫</div>'}
+  `;
+}
+
+function keyTap(pid, letter) {
+  if (state[pid]._s3locked) return;
+  const inp = $(pid + '-s3input');
+  if (inp.textContent === '_') inp.textContent = '';
+  inp.textContent += letter;
+  state[pid]._s3usedLetters = inp.textContent;
+}
+
+function bubbleTap(pid, letter) {
+  if (state[pid]._s3locked) return;
+  const inp = $(pid + '-s3input');
+  if (inp.textContent === '_') inp.textContent = '';
+  inp.textContent += letter;
+  state[pid]._s3usedLetters = inp.textContent;
+}
+
+function s3Delete(pid) {
+  if (state[pid]._s3locked) return;
+  const inp = $(pid + '-s3input');
+  if (inp.textContent.length <= 1) { inp.textContent = '_'; return; }
+  inp.textContent = inp.textContent.slice(0, -1);
+  state[pid]._s3usedLetters = inp.textContent;
+}
+
+function s3Space(pid) {
+  // No-op for now
+}
+
+function checkS3(pid) {
+  if (state[pid]._s3locked) return;
+  const inp = $(pid + '-s3input');
+  const typed = inp.textContent === '_' ? '' : inp.textContent;
+  const correct = typed === state.currentWord;
+
+  if (correct) {
+    state[pid]._s3locked = true;
+    const time = ((Date.now() - state[pid]._s3time) / 1000).toFixed(1);
+    const scoreFor = pid === 'p1' ? 'player1' : 'player2';
+    state[scoreFor].score += 4;
+
+    inp.classList.add('correct');
+    state[pid]._s3result = { correct: true, time, answer: typed, attempts: state[pid]._s3attempts + 1 };
+
+    // Disable keyboard
+    const el = $(pid + '-stage');
+    el.querySelectorAll('button, .s3-bubble').forEach(b => b.disabled = true);
+
+    checkBothDone(3, pid);
+  } else {
+    state[pid]._s3attempts++;
+    const hintEl = $(pid === 'p1' ? 'sh-p1' : 'sh-p2');
+
+    if (state[pid]._s3attempts === 1) {
+      // First wrong: switch to bubble mode
+      hintEl.textContent = '💡 再試一次！只留需要的字母';
+      inp.classList.add('wrong');
+      setTimeout(() => {
+        inp.classList.remove('wrong');
+        inp.textContent = '_';
+        state[pid]._s3usedLetters = '_';
+        renderS3($(pid + '-stage'), pid, true);
+      }, 600);
+    } else {
+      // Still wrong in bubble mode — reveal answer
+      state[pid]._s3locked = true;
+      const time = ((Date.now() - state[pid]._s3time) / 1000).toFixed(1);
+      inp.textContent = state.currentWord;
+      inp.classList.add('correct');
+
+      // Track mistake
+      const pl = pid === 'p1' ? state.player1 : state.player2;
+      pl.mistakes.push({
+        word: state.currentWord,
+        stage: 3,
+        attempts: state[pid]._s3attempts + 1,
+        typed: typed,
+        solved: false
+      });
+
+      state[pid]._s3result = { correct: false, time, answer: typed, attempts: state[pid]._s3attempts + 1 };
+
+      // Disable keyboard
+      const el = $(pid + '-stage');
+      el.querySelectorAll('button, .s3-bubble').forEach(b => b.disabled = true);
+
+      checkBothDone(3, pid);
+    }
+  }
+}
+
+// ============================================================
+// CHECK BOTH DONE
+// ============================================================
+function checkBothDone(stage, justFinishedPid) {
+  const other = justFinishedPid === 'p1' ? 'p2' : 'p1';
+  const bothDone = (
+    (stage === 1 && state[justFinishedPid]._s1result && state[other]._s1result) ||
+    (stage === 2 && state[justFinishedPid]._s2result && state[other]._s2result) ||
+    (stage === 3 && state[justFinishedPid]._s3result && state[other]._s3result)
+  );
+
+  if (bothDone) {
+    setTimeout(() => {
+      if (stage < 3) {
+        buildStage(stage + 1);
+      } else {
+        showWordResult();
+      }
+    }, 800);
+  }
+}
+
+// ============================================================
+// WORD RESULT
+// ============================================================
+function showWordResult() {
+  const w = state.currentWord;
+  $('wr-word').textContent = w;
+  $('wr-p1n').textContent = state.player1.name;
+  $('wr-p2n').textContent = state.player2.name;
+
+  const r1 = state.p1._s1result;
+  const r2 = state.p1._s2result;
+  const r3 = state.p1._s3result;
+  $('wr-p1d').innerHTML = `
+    <div>S1: ${r1 ? (r1.correct ? '✓' : '✗"'+r1.answer+'"') : '-'} (${r1 ? r1.time+'s' : ''})</div>
+    <div>S2: ${r2 ? (r2.correct ? '✓' : '✗"'+r2.answer+'"') : '-'}</div>
+    <div>S3: ${r3 ? (r3.correct ? '✓' : '✗ ('+r3.attempts+'次→"'+r3.answer+'")') : '-'}</div>
+  `;
+
+  const r1b = state.p2._s1result;
+  const r2b = state.p2._s2result;
+  const r3b = state.p2._s3result;
+  $('wr-p2d').innerHTML = `
+    <div>S1: ${r1b ? (r1b.correct ? '✓' : '✗"'+r1b.answer+'"') : '-'} (${r1b ? r1b.time+'s' : ''})</div>
+    <div>S2: ${r2b ? (r2b.correct ? '✓' : '✗"'+r2b.answer+'"') : '-'}</div>
+    <div>S3: ${r3b ? (r3b.correct ? '✓' : '✗ ('+r3b.attempts+'次→"'+r3b.answer+'")') : '-'}</div>
+  `;
+
+  // Determine round winner
+  const p1w = state.player1.score;
+  const p2w = state.player2.score;
+  if (p1w > p2w) state.player1.wins++;
+  else if (p2w > p1w) state.player2.wins++;
+  // tie = no win change
+
+  const rdInfo = `第 ${state.currentRound + 1} 題 • ${state.player1.name} ${state.player1.wins} 勝 : ${state.player2.name} ${state.player2.wins} 勝`;
+
+  state.currentRound++;
+
+  // Check if done
+  let done = false;
+  if (state.roundFormat === 7) {
+    done = state.currentRound >= 7;
+  } else {
+    done = state.player1.wins >= state.targetWins || state.player2.wins >= state.targetWins ||
+           state.currentRound >= state.rounds.length;
+  }
+
+  if (done) {
+    $('btn-next-round').textContent = '🏆 看結果';
+    $('btn-next-round').onclick = showFinalResult;
+    $('btn-next-round').className = 'btn btn-orange btn-lg';
+  } else {
+    $('btn-next-round').textContent = '▶ 下一題';
+    $('btn-next-round').onclick = nextRound;
+    $('btn-next-round').className = 'btn btn-blue btn-lg';
+  }
+
+  $('wr-title').textContent = done ? '🎉 對決結束' : rdInfo;
+  showScreen('word-result');
+}
+
+function nextRound() {
+  showReadyScreen();
+}
+
+// ============================================================
+// FINAL RESULT
+// ============================================================
+function showFinalResult() {
+  const p1 = state.player1, p2 = state.player2;
+  const winner = p1.wins > p2.wins ? p1.name : (p2.wins > p1.wins ? p2.name : '平手');
+  $('final-champion').textContent = winner === '平手' ? '🤝 平手！' : `🏆 ${winner} 獲勝！`;
+  $('fp-p1n').textContent = p1.name;
+  $('fp-p2n').textContent = p2.name;
+  $('fp-p1s').textContent = p1.wins + ' 勝';
+  $('fp-p2s').textContent = p2.wins + ' 勝';
+
+  // Mistake comparison
+  const allWords = [...new Set([...p1.mistakes.map(m => m.word), ...p2.mistakes.map(m => m.word)])];
+  let compareHTML = '<div style="font-size:0.85em;">';
+  allWords.forEach(w => {
+    const m1 = p1.mistakes.filter(m => m.word === w);
+    const m2 = p2.mistakes.filter(m => m.word === w);
+    compareHTML += `<div style="margin-bottom:8px;padding:6px 8px;background:#1e293b;border-radius:8px;">
+      <div style="font-weight:bold;color:#fbbf24;">${w}</div>
+      <div class="compare-row" style="margin:2px 0;">
+        <div class="compare-col p1" style="font-size:0.8em;">
+          ${p1.name}: ${m1.length > 0 ? m1.map(m => `<span class="mistake-red">「${m.typed}」</span>`).join(', ')+' (第'+m1[0].stage+'關×'+m1[0].attempts+'次)' : '✓'}
+        </div>
+        <div class="compare-col p2" style="font-size:0.8em;">
+          ${p2.name}: ${m2.length > 0 ? m2.map(m => `<span class="mistake-red">「${m.typed}」</span>`).join(', ')+' (第'+m2[0].stage+'關×'+m2[0].attempts+'次)' : '✓'}
+        </div>
+      </div>
+    </div>`;
+  });
+  compareHTML += '</div>';
+  $('final-compare').innerHTML = compareHTML;
+
+  showScreen('final');
+
+  // Save to GAS
+  saveDuelToSheet(p1, p2);
+}
+
+async function saveDuelToSheet(p1, p2) {
+  const winner = p1.wins > p2.wins ? p1.name : (p2.wins > p1.wins ? p2.name : '平手');
+  const p1m = p1.mistakes.map(m => `${m.word}(S${m.stage}×${m.attempts}→${m.typed})`).join('; ') || '-';
+  const p2m = p2.mistakes.map(m => `${m.word}(S${m.stage}×${m.attempts}→${m.typed})`).join('; ') || '-';
+
+  const params = new URLSearchParams({
+    action: 'saveDuelScore',
+    className: state.className,
+    player1Name: p1.name,
+    player2Name: p2.name,
+    roundFormat: state.roundFormat === 7 ? '7題戰' : '搶' + state.roundFormat + '勝',
+    p1Score: p1.wins,
+    p2Score: p2.wins,
+    winner: winner,
+    p1Mistakes: p1m,
+    p2Mistakes: p2m,
+    callback: 'duelCb'
+  });
+
+  // JSONP
+  window.duelCb = function() {};
+  const script = document.createElement('script');
+  script.src = GAS_URL + '?' + params.toString();
+  document.head.appendChild(script);
+  script.onload = () => document.head.removeChild(script);
+}
+
+function restartDuel() {
+  $('d-p1').value = state.player1.name;
+  $('d-p2').value = state.player2.name;
+  showScreen('entry');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+showScreen('entry');
+</script>
+</body>
+</html>
