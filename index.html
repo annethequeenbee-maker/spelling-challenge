@@ -866,7 +866,6 @@ function startStage1() {
 }
 
 function selectStage1Option(idx) {
-  if (state.stage1Selected !== null) return;
   state.stage1Selected = idx;
   $$('#s1-options .option-card').forEach(el => el.classList.remove('selected'));
   $('#s1-options').children[idx].classList.add('selected');
