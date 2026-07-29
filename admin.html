@@ -94,18 +94,47 @@ async function loadDashboard() {
   const qs = new URLSearchParams({ action: 'getDashboard', className });
   const url = GAS_URL + '?' + qs.toString();
   
-  try {
-    const res = await fetch(url, { method: 'GET', redirect: 'follow' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.success) {
-      render(data);
-    } else {
-      showError('GAS 錯誤：' + (data.error || '未知'));
+  // 先用 fetch，失敗則用 JSONP 備援
+  fetch(url, { method: 'GET', redirect: 'follow' })
+    .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+    .then(data => {
+      if (data.success) render(data);
+      else showError('GAS 錯誤：' + (data.error || '未知'));
+    })
+    .catch(err => {
+      console.log('Fetch failed, trying JSONP:', err);
+      loadDashboardJSONP(className);
+    });
+}
+
+function loadDashboardJSONP(className) {
+  const cbName = 'gasCb_' + Date.now();
+  const qs = new URLSearchParams({ action: 'getDashboard', className, callback: cbName });
+  const script = document.createElement('script');
+  script.src = GAS_URL + '?' + qs.toString();
+  
+  window[cbName] = function(data) {
+    if (data && data.success) render(data);
+    else showError('JSONP 載入錯誤：' + (data && data.error || '未知'));
+    if (script.parentNode) script.parentNode.removeChild(script);
+    delete window[cbName];
+  };
+
+  script.onerror = function() {
+    showError('JSONP 載入失敗，請確認 GAS 網址是否正確並已部署');
+    if (script.parentNode) script.parentNode.removeChild(script);
+    delete window[cbName];
+  };
+
+  document.head.appendChild(script);
+
+  setTimeout(function() {
+    if (window[cbName]) {
+      showError('載入逾時，請確認 GAS 可正常存取');
+      if (script.parentNode) script.parentNode.removeChild(script);
+      delete window[cbName];
     }
-  } catch(e) {
-    showError('無法載入：' + e.message + '<br><small class="text-gray-400">請確認 GAS 已部署並包含 getDashboard 端點</small>');
-  }
+  }, 10000);
 }
 
 function showError(msg) {
