@@ -882,7 +882,6 @@ async function checkStage1() {
     cards[state.stage1Selected].classList.add('correct');
     const points = state.stage1Attempts === 1 ? 3 : 1;
     state.score += points;
-    state.maxScore += 3;
     addMistake(w, 1, state.stage1Attempts, state.stage1Options[state.stage1Selected], true);
     setTimeout(() => startStage2(), 800);
   } else {
@@ -980,7 +979,6 @@ async function checkStage2() {
     boxes.forEach(b => b.classList.add('correct'));
     const points = state.stage2Attempts === 1 ? 3 : 1;
     state.score += points;
-    state.maxScore += 3;
     addMistake(getCurrentWord(), 2, state.stage2Attempts, userOrder.join('-'), true);
     setTimeout(() => startStage3(), 800);
   } else {
@@ -1036,7 +1034,6 @@ async function checkStage3() {
     $('#s3-input').classList.add('correct');
     const points = state.stage3Attempts === 1 ? 4 : 2;
     state.score += points;
-    state.maxScore += 4;
     addMistake(w, 3, state.stage3Attempts, input, true);
     setTimeout(() => nextWord(), 800);
   } else {
