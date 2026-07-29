@@ -859,11 +859,15 @@ function startStage1() {
 
   $('#s1-options').innerHTML = options.map((opt, i) => {
     const oData = WORD_DATA[opt];
-    return `
+    return oData ? `
       <div class="option-card" data-idx="${i}" onclick="selectStage1Option(${i})">
         <div style="font-size:2.2em;line-height:1;margin-bottom:6px;">${oData.icon}</div>
         <div style="font-size:1.1em;">${opt}</div>
         <div style="font-size:0.7em;color:#888;margin-top:2px;">${oData.cn}</div>
+      </div>
+    ` : `
+      <div class="option-card" data-idx="${i}" onclick="selectStage1Option(${i})">
+        <div style="font-size:1.1em;">${opt}</div>
       </div>
     `;
   }).join('');
