@@ -1027,15 +1027,27 @@ async function checkStage3() {
   const input = $('#s3-input').value.trim();
   if (!input) return;
   const w = getCurrentWord();
-  const correct = input.toLowerCase() === w.toLowerCase();
+  const caseInsensitive = input.toLowerCase() === w.toLowerCase();
+  const exactMatch = input === w;
   state.stage3Attempts++;
 
-  if (correct) {
+  if (exactMatch) {
     $('#s3-input').classList.add('correct');
     const points = state.stage3Attempts === 1 ? 4 : 2;
     state.score += points;
     addMistake(w, 3, state.stage3Attempts, input, true);
     setTimeout(() => nextWord(), 800);
+  } else if (caseInsensitive) {
+    // 字母對但大小寫錯
+    $('#s3-input').classList.add('wrong');
+    addMistake(w, 3, state.stage3Attempts, input, false);
+    state.stage3HintLevel++;
+    $('#s3-hint-text').style.display = 'block';
+    $('#s3-hint-text').innerHTML = '⚠️ 字母拼對了！但<b>開頭要大寫</b>喔，星期單字是 <b style="color:#c62828;">' + w + '</b>（' + w[0] + ' 大寫）';
+    $('#s3-hint-frame').style.display = 'none';
+    $('#s3-input').value = '';
+    $('#s3-input').focus();
+    setTimeout(() => { $('#s3-input').classList.remove('wrong'); }, 400);
   } else {
     $('#s3-input').classList.add('wrong');
     addMistake(w, 3, state.stage3Attempts, input, false);
