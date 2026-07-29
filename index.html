@@ -128,9 +128,22 @@ body { font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background
   <div style="font-size:3em;">📚</div>
   <h1 style="font-size:1.8em;color:#1d4e89;margin:15px 0;">星期單字拼寫挑戰</h1>
   <p style="color:#666;margin-bottom:30px;">聽音 → 拼字 → 默寫，小五英文單字大挑戰！</p>
-  <div style="display:flex;flex-direction:column;gap:16px;max-width:280px;margin:0 auto;">
-    <button class="btn btn-blue btn-lg" onclick="enterStudent()">🎮 學生挑戰模式</button>
-    <button class="btn btn-outline btn-lg" onclick="enterTeacher()">📊 老師後台分析</button>
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:280px;margin:0 auto;">
+    <input id="s-class2" placeholder="班級（例：五年一班）" style="padding:12px;border:2px solid #ddd;border-radius:10px;font-size:1em;text-align:center;">
+    <input id="s-name2" placeholder="你的姓名" style="padding:12px;border:2px solid #ddd;border-radius:10px;font-size:1em;text-align:center;">
+    <div>
+      <p style="font-size:0.9em;color:#888;margin-bottom:8px;">選擇題數：</p>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" id="qc3" onclick="selectQC(3)" style="flex:1;">3 題<br><small>快速複習</small></button>
+        <button class="btn btn-outline" id="qc5" onclick="selectQC(5)" style="flex:1;">5 題<br><small>標準測驗</small></button>
+        <button class="btn btn-outline" id="qc7" onclick="selectQC(7)" style="flex:1;">7 題<br><small>全挑戰</small></button>
+      </div>
+    </div>
+    <button class="btn btn-purple btn-lg" onclick="goAIReviewFromEntry()">🤖 AI 先幫我複習</button>
+    <button class="btn btn-blue btn-lg" onclick="startGameFromEntry()">⚡ 直接開始挑戰</button>
+  </div>
+  <div style="margin-top:40px;">
+    <a href="javascript:enterTeacher()" style="color:#ccc;font-size:0.75em;text-decoration:none;">👨‍🏫</a>
   </div>
 </div>
 
@@ -573,6 +586,42 @@ function enterTeacher() {
   showScreen('teacher-login');
 }
 
+function startGameFromEntry() {
+  if (!validateLogin(true)) return;
+  state.mode = 'student';
+  pickWords();
+  resetGameState();
+  startStage1();
+}
+
+function goAIReviewFromEntry() {
+  if (!validateLogin(true)) return;
+  state.mode = 'student';
+  state.chatContext = 'review';
+  state.chatMessages = [];
+  showScreen('ai-chat');
+  $('#chat-title').textContent = '🤖 AI 英語小老師 — 考前複習';
+  $('#btn-start-after-chat').style.display = '';
+  $('#chat-presets').innerHTML = `
+    <button class="chat-preset" onclick="sendPreset('幫我用有趣的方式介紹所有星期單字 Sunday~Saturday，要有記憶口訣和發音提示！')">📖 介紹所有單字</button>
+    <button class="chat-preset" onclick="sendPreset('Wednesday 這個字好難，可以教我怎麼記住它嗎？')">🤔 Wed怎麼記</button>
+    <button class="chat-preset" onclick="sendPreset('Thursday 的發音有什麼注意的？')">👅 Th發音</button>
+    <button class="chat-preset" onclick="sendPreset('把所有星期單字整理成一個好記的口訣！')">🎵 口訣記憶</button>
+    <button class="chat-preset" onclick="sendPreset('考考我這些單字，你念我來拼！')">✍️ 抽考我</button>
+  `;
+  renderChat();
+}
+
+function resetGameState() {
+  state.currentWordIdx = 0;
+  state.currentStage = 1;
+  state.score = 0;
+  state.maxScore = state.questionCount * 10;
+  state.startTime = Date.now();
+  state.mistakes = [];
+  state.retryMode = false;
+}
+
 // ============================================================
 // SCREEN: STUDENT LOGIN
 // ============================================================
@@ -586,9 +635,17 @@ function selectQC(n) {
 }
 selectQC(3);
 
-function validateLogin() {
-  const cn = $('#s-class').value.trim();
-  const sn = $('#s-name').value.trim();
+function validateLogin(fromEntry) {
+  let cn, sn;
+  if (fromEntry) {
+    cn = $('#s-class2').value.trim();
+    sn = $('#s-name2').value.trim();
+    if (cn) $('#s-class').value = cn;
+    if (sn) $('#s-name').value = sn;
+  } else {
+    cn = $('#s-class').value.trim();
+    sn = $('#s-name').value.trim();
+  }
   if (!cn || !sn) { alert('請輸入班級和姓名'); return false; }
   state.className = cn;
   state.studentName = sn;
@@ -1139,9 +1196,9 @@ function startAITutor() {
 }
 
 function resetToLogin() {
-  showScreen('student-login');
-  $('#s-class').value = '';
-  $('#s-name').value = '';
+  showScreen('entry');
+  $('#s-class2').value = '';
+  $('#s-name2').value = '';
 }
 
 // ============================================================
