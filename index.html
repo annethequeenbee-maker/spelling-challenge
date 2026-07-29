@@ -118,15 +118,6 @@ body { font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background
 .mistake-highlight { background: #ffcdd2; color: #c62828; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
 .mistake-correct { background: #c8e6c9; color: #2e7d32; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
 
-/* ===== QR Code ===== */
-.qr-card { background: #fff; border-radius: 14px; padding: 18px; margin: 30px auto 0; max-width: 340px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
-.qr-card img { display: block; margin: 0 auto; border-radius: 10px; }
-.qr-url { display: inline-block; background: #f0f4ff; border: 1px solid #d4dff7; border-radius: 8px; padding: 6px 10px; font-size: 0.8em; word-break: break-all; color: #1d4e89; font-family: monospace; margin: 8px 0; }
-.qr-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.98); display: none; align-items: center; justify-content: center; flex-direction: column; z-index: 1000; cursor: zoom-out; }
-.qr-overlay.active { display: flex; }
-.qr-overlay img { width: min(300px, 70vw); height: auto; border-radius: 16px; }
-.qr-overlay .url { font-size: clamp(16px, 3vw, 28px); font-weight: bold; color: #1d4e89; margin-top: 20px; text-align: center; word-break: break-all; padding: 0 20px; }
-.qr-overlay .hint { color: #888; margin-top: 10px; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -153,40 +144,9 @@ body { font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background
     <button class="btn btn-blue btn-lg" onclick="startGameFromEntry()">⚡ 直接開始挑戰</button>
   </div>
 
-  <!-- 三關介紹 -->
-  <div class="card" style="margin-top:22px;text-align:left;max-width:340px;margin-left:auto;margin-right:auto;">
-    <div style="font-size:1em;font-weight:bold;color:#1d4e89;margin-bottom:10px;">🎮 三關怎麼玩？</div>
-    <ul style="margin:0;padding-left:18px;color:#555;font-size:0.88em;line-height:1.7;">
-      <li><b>第一關：聽音選字</b><br>聽發音，從 4 個單字中點選正確答案。</li>
-      <li><b>第二關：音節積木</b><br>把打散的音節卡片，依序點進正確的盒子裡。</li>
-      <li><b>第三關：全盲默寫</b><br>完全憑記憶打出單字，開頭記得大寫！</li>
-    </ul>
-    <p style="margin:10px 0 0;font-size:0.8em;color:#888;">答錯時會有 AI 小老師給你階梯式提示，幫你找出拼寫迷思。</p>
-  </div>
-
-  <!-- QR Code 區塊 -->
-  <div class="qr-card">
-    <div style="font-size:1.1em;font-weight:bold;color:#1d4e89;margin-bottom:8px;">📱 學生掃碼直接玩</div>
-    <p style="font-size:0.85em;color:#666;margin-bottom:12px;">用平板或手機相機掃描，不用輸入網址</p>
-    <img id="qrcode-img" src="" alt="QR Code" style="width:160px;height:160px;display:block;margin:0 auto;border-radius:10px;border:1px solid #e0e0e0;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
-    <div id="qrcode-fallback" style="display:none;padding:20px;background:#f5f5f5;border-radius:10px;color:#666;font-size:0.85em;">QR Code 載入失敗<br>請點「複製網址」手動分享</div>
-    <div class="qr-url" id="qr-url"></div>
-    <div style="display:flex;gap:10px;justify-content:center;">
-      <button class="btn btn-outline" onclick="showQrOverlay()" style="font-size:0.9em;padding:8px 16px;">放大投影</button>
-      <button class="btn btn-outline" onclick="copyQrUrl()" style="font-size:0.9em;padding:8px 16px;">複製網址</button>
-    </div>
-  </div>
-
   <div style="margin-top:30px;">
     <a href="javascript:enterTeacher()" style="color:#ccc;font-size:0.75em;text-decoration:none;">👨‍🏫</a>
   </div>
-</div>
-
-<!-- QR 放大投影 -->
-<div id="qr-overlay" class="qr-overlay" onclick="hideQrOverlay()">
-  <img id="qrcode-big-img" src="" alt="QR Code" style="width:320px;height:320px;border-radius:16px;border:1px solid #e0e0e0;">
-  <div class="url" id="qr-url-big"></div>
-  <div class="hint">點畫面任一處關閉</div>
 </div>
 
 <!-- ====== STUDENT LOGIN ====== -->
@@ -377,13 +337,13 @@ const GAS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbylPnrO8L6y4GK8Qf
 // WORD DATA
 // ============================================================
 const WORD_DATA = {
-  Sunday:    { cn:'星期天', syllables:['Sun','day'], distractors:['Sanday','Sundey','Sundai'], hintS1:'2 個音節，S 開頭', hintS2:'Sun 是太陽', hintS3:'S u n d a y' },
-  Monday:    { cn:'星期一', syllables:['Mon','day'], distractors:['Munday','Manday','Mondy'], hintS1:'2 個音節，M 開頭，o 發短音', hintS2:'Mon 像 Moon 月亮', hintS3:'M o n d a y' },
-  Tuesday:   { cn:'星期二', syllables:['Tues','day'], distractors:['Tusday','Teusday','Tusdey'], hintS1:'T 開頭，有 ue 組合', hintS2:'Tues 發 /tuz/', hintS3:'T u e s d a y' },
-  Wednesday: { cn:'星期三', syllables:['Wed','nes','day'], distractors:['Wensday','Wenesday','Wednsday'], hintS1:'3 個音節，W 開頭，藏著不發音的 d', hintS2:'Wed-nes-day，中間 nes 容易漏', hintS3:'W e d n e s d a y（藏著 d 喔！）' },
-  Thursday:  { cn:'星期四', syllables:['Thurs','day'], distractors:['Thrusday','Thesday','Thirsday'], hintS1:'Th 開頭（咬舌音），有 ur 捲舌', hintS2:'Th-urs-day，中間 urs', hintS3:'T h u r s d a y' },
-  Friday:    { cn:'星期五', syllables:['Fri','day'], distractors:['Fryday','Frieday','Fiday'], hintS1:'F 開頭，r 跟著 i', hintS2:'Fri 像 Free 自由', hintS3:'F r i d a y' },
-  Saturday:  { cn:'星期六', syllables:['Sat','ur','day'], distractors:['Saterday','Saturdai','Saterdei'], hintS1:'3 個音節，S 開頭，at 在中間', hintS2:'Sat-ur-day，注意 ur', hintS3:'S a t u r d a y' },
+  Sunday:    { cn:'星期天', icon:'☀️', syllables:['Sun','day'], distractors:['Sanday','Sundey','Sundai'], hintS1:'2 個音節，S 開頭', hintS2:'Sun 是太陽', hintS3:'S u n d a y' },
+  Monday:    { cn:'星期一', icon:'🌙', syllables:['Mon','day'], distractors:['Munday','Manday','Mondy'], hintS1:'2 個音節，M 開頭，o 發短音', hintS2:'Mon 像 Moon 月亮', hintS3:'M o n d a y' },
+  Tuesday:   { cn:'星期二', icon:'🔥', syllables:['Tues','day'], distractors:['Tusday','Teusday','Tusdey'], hintS1:'T 開頭，有 ue 組合', hintS2:'Tues 發 /tuz/', hintS3:'T u e s d a y' },
+  Wednesday: { cn:'星期三', icon:'💧', syllables:['Wed','nes','day'], distractors:['Wensday','Wenesday','Wednsday'], hintS1:'3 個音節，W 開頭，藏著不發音的 d', hintS2:'Wed-nes-day，中間 nes 容易漏', hintS3:'W e d n e s d a y（藏著 d 喔！）' },
+  Thursday:  { cn:'星期四', icon:'⚡', syllables:['Thurs','day'], distractors:['Thrusday','Thesday','Thirsday'], hintS1:'Th 開頭（咬舌音），有 ur 捲舌', hintS2:'Th-urs-day，中間 urs', hintS3:'T h u r s d a y' },
+  Friday:    { cn:'星期五', icon:'⭐', syllables:['Fri','day'], distractors:['Fryday','Frieday','Fiday'], hintS1:'F 開頭，r 跟著 i', hintS2:'Fri 像 Free 自由', hintS3:'F r i d a y' },
+  Saturday:  { cn:'星期六', icon:'🎉', syllables:['Sat','ur','day'], distractors:['Saterday','Saturdai','Saterdei'], hintS1:'3 個音節，S 開頭，at 在中間', hintS2:'Sat-ur-day，注意 ur', hintS3:'S a t u r d a y' },
 };
 
 const ALL_WORDS = Object.keys(WORD_DATA);
@@ -897,9 +857,16 @@ function startStage1() {
   const options = shuffle([w, ...data.distractors]);
   state.stage1Options = options;
 
-  $('#s1-options').innerHTML = options.map((opt, i) => `
-    <div class="option-card" data-idx="${i}" onclick="selectStage1Option(${i})">${opt}</div>
-  `).join('');
+  $('#s1-options').innerHTML = options.map((opt, i) => {
+    const oData = WORD_DATA[opt];
+    return `
+      <div class="option-card" data-idx="${i}" onclick="selectStage1Option(${i})">
+        <div style="font-size:2.2em;line-height:1;margin-bottom:6px;">${oData.icon}</div>
+        <div style="font-size:1.1em;">${opt}</div>
+        <div style="font-size:0.7em;color:#888;margin-top:2px;">${oData.cn}</div>
+      </div>
+    `;
+  }).join('');
 
   // 自動播放發音
   setTimeout(() => speakWord(w), 400);
@@ -1390,48 +1357,11 @@ function launchConfetti() {
 }
 
 // ============================================================
-// QR CODE
-// ============================================================
-const GAME_URL = 'https://annethequeenbee-maker.github.io/spelling-challenge/';
-const QR_API_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=1d4e89&data=';
-
-function initQR() {
-  $('#qr-url').textContent = GAME_URL;
-  $('#qr-url-big').textContent = GAME_URL;
-  const qrUrl = QR_API_URL + encodeURIComponent(GAME_URL);
-  $('#qrcode-img').src = qrUrl;
-  $('#qrcode-big-img').src = qrUrl.replace('size=200x200', 'size=400x400');
-}
-
-function showQrOverlay() {
-  $('#qr-overlay').classList.add('active');
-}
-
-function hideQrOverlay() {
-  $('#qr-overlay').classList.remove('active');
-}
-
-function copyQrUrl() {
-  navigator.clipboard.writeText(GAME_URL).then(() => {
-    alert('網址已複製！');
-  }).catch(() => {
-    const el = document.createElement('textarea');
-    el.value = GAME_URL;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    alert('網址已複製！');
-  });
-}
-
-// ============================================================
 // INIT
 // ============================================================
 function init() {
   showScreen('entry');
   selectQC(3);
-  initQR();
 
   // 讀取 URL 參數，自動填入班級姓名
   const params = new URLSearchParams(window.location.search);
