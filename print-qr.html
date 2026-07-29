@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>列印全班 QR Code</title>
+<style>
+  * { box-sizing: border-box; font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; }
+  body { margin: 0; padding: 20px; background: #f5f7fa; color: #333; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { color: #1d4e89; margin: 0 0 10px; }
+  .subtitle { color: #666; margin-bottom: 20px; font-size: 0.95em; }
+  .input-area { background: #fff; padding: 20px; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 20px; }
+  label { display: block; font-weight: bold; margin-bottom: 6px; color: #1d4e89; }
+  input[type="text"], textarea { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 1em; margin-bottom: 12px; }
+  textarea { min-height: 180px; resize: vertical; }
+  .btn { display: inline-block; padding: 12px 24px; border: none; border-radius: 10px; font-size: 1em; font-weight: bold; cursor: pointer; margin-right: 10px; }
+  .btn-primary { background: #1d4e89; color: #fff; }
+  .btn-secondary { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+  .btn:hover { opacity: 0.9; }
+
+  .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; margin-top: 20px; }
+  .qr-card { background: #fff; padding: 16px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; }
+  .qr-card img { width: 100%; max-width: 160px; height: auto; margin: 0 auto; display: block; }
+  .qr-name { font-size: 1.2em; font-weight: bold; color: #1d4e89; margin-top: 10px; }
+  .qr-class { font-size: 0.85em; color: #666; margin-top: 4px; }
+  .qr-hint { font-size: 0.75em; color: #888; margin-top: 8px; }
+
+  .print-only { display: none; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .input-area, .btn, .subtitle, h1 { display: none; }
+    .qr-grid { grid-template-columns: repeat(3, 1fr); gap: 15px; page-break-inside: avoid; }
+    .qr-card { box-shadow: none; border: 1px solid #ddd; }
+    .print-only { display: block; text-align: center; font-size: 1.5em; font-weight: bold; color: #1d4e89; margin-bottom: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📱 列印全班 QR Code</h1>
+  <p class="subtitle">學生掃描後會自動帶入班級和姓名，停在首頁選題數即可開始。</p>
+
+  <div class="input-area">
+    <label>班級名稱</label>
+    <input type="text" id="className" placeholder="例：501">
+
+    <label>學生姓名（一行一個）</label>
+    <textarea id="studentNames" placeholder="王小明&#10;陳小華&#10;林小美"></textarea>
+
+    <div>
+      <button class="btn btn-primary" onclick="generateQRs()">產生 QR Code</button>
+      <button class="btn btn-secondary" onclick="window.print()">🖨️ 列印</button>
+    </div>
+  </div>
+
+  <div class="print-only">星期單字拼寫挑戰 — QR Code 掃描即玩</div>
+  <div id="qrGrid" class="qr-grid"></div>
+</div>
+
+<script>
+const GAME_URL = 'https://annethequeenbee-maker.github.io/spelling-challenge/';
+
+function generateQRs() {
+  const className = document.getElementById('className').value.trim();
+  const raw = document.getElementById('studentNames').value.trim();
+  const names = raw.split('\n').map(n => n.trim()).filter(n => n);
+  const grid = document.getElementById('qrGrid');
+  grid.innerHTML = '';
+
+  if (!className) { alert('請輸入班級名稱'); return; }
+  if (names.length === 0) { alert('請輸入至少一位學生姓名'); return; }
+
+  names.forEach(name => {
+    const url = `${GAME_URL}?class=${encodeURIComponent(className)}&name=${encodeURIComponent(name)}`;
+    const imgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+    const card = document.createElement('div');
+    card.className = 'qr-card';
+    card.innerHTML = `
+      <img src="${imgUrl}" alt="QR Code" onerror="this.parentElement.innerHTML='<div style=\\'padding:30px 0;color:#999;font-size:0.8em\\'>QR Code 載入失敗<br>請檢查網路</div>'">
+      <div class="qr-name">${name}</div>
+      <div class="qr-class">${className}</div>
+      <div class="qr-hint">掃描自動帶入資料</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+</script>
+</body>
+</html>

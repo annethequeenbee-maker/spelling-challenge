@@ -1449,6 +1449,19 @@ function init() {
   showScreen('entry');
   selectQC(3);
   initQR();
+
+  // 讀取 URL 參數，自動填入班級姓名
+  const params = new URLSearchParams(window.location.search);
+  const urlClass = params.get('class');
+  const urlName = params.get('name');
+  if (urlClass) {
+    $('#s-class2').value = urlClass;
+    $('#s-class').value = urlClass;
+  }
+  if (urlName) {
+    $('#s-name2').value = urlName;
+    $('#s-name').value = urlName;
+  }
 }
 init();
 </script>
