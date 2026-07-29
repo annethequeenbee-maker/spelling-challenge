@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼寫挑戰 — 老師後台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  * { font-family: 'Inter', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; }
+  body { background: #f8f9fb; }
+  .card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06); }
+  .stat-num { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+  .heat-bar { height: 28px; border-radius: 7px; min-width: 4px; transition: width 0.5s ease; display: flex; align-items: center; padding-left: 10px; color: #fff; font-size: 0.8rem; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 12px; font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #f0f0f0; }
+  td { padding: 12px 12px; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem; }
+  tr:hover td { background: #fafbfc; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background: #ecfdf5; color: #059669; }
+  .badge-yellow { background: #fffbeb; color: #d97706; }
+  .badge-red { background: #fef2f2; color: #dc2626; }
+  .badge-blue { background: #eff6ff; color: #2563eb; }
+  .skeleton { background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="max-w-6xl mx-auto px-4 py-8">
+
+<!-- Header -->
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800">📚 星期單字拼寫挑戰</h1>
+    <p class="text-sm text-gray-400 mt-1">老師後台儀表板</p>
+  </div>
+  <div class="flex items-center gap-3">
+    <select id="classSelect" class="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="loadDashboard()">
+      <option value="">全部班級</option>
+    </select>
+    <button onclick="loadDashboard()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">重新整理</button>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="statsRow">
+  <div class="card"><div class="stat-label">總遊戲次數</div><div class="stat-num skeleton h-10 w-16 mt-2" id="stat-games">-</div></div>
+  <div class="card"><div class="stat-label">參與學生</div><div class="stat-num skeleton h-10 w-16 mt-2" id="stat-students">-</div></div>
+  <div class="card"><div class="stat-label">平均得分</div><div class="stat-num skeleton h-10 w-16 mt-2" id="stat-avg">-</div></div>
+  <div class="card"><div class="stat-label">錯字詞數</div><div class="stat-num skeleton h-10 w-16 mt-2" id="stat-words">-</div></div>
+</div>
+
+<!-- Heatmap + Summary -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <!-- Heatmap -->
+  <div class="card">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">🔥 錯字熱力圖</h2>
+    <div id="heatmap" class="space-y-3">
+      <p class="text-sm text-gray-400">載入中...</p>
+    </div>
+  </div>
+  <!-- Student Summary -->
+  <div class="card">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">👥 學生排行榜</h2>
+    <div id="summaryTable" class="overflow-x-auto">
+      <p class="text-sm text-gray-400">載入中...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Records -->
+<div class="card">
+  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">📋 最近紀錄</h2>
+  <div id="recordsTable" class="overflow-x-auto">
+    <p class="text-sm text-gray-400">載入中...</p>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbylPnrO8L6y4GK8QfQdCbCPjpEqOQpPXm6VqMMOyecesr9PA6GKzx66cQyKWk3xf2zU/exec';
+
+// ============================================================
+// LOAD
+// ============================================================
+async function loadDashboard() {
+  showSkeleton();
+  const className = document.getElementById('classSelect').value;
+  const qs = new URLSearchParams({ action: 'getDashboard', className });
+  try {
+    const res = await fetch(GAS_URL + '?' + qs.toString());
+    const data = await res.json();
+    if (data.success) render(data);
+  } catch(e) {
+    document.getElementById('heatmap').innerHTML = '<p class="text-red-500 text-sm">載入失敗</p>';
+  }
+}
+
+function showSkeleton() {
+  ['stat-games','stat-students','stat-avg','stat-words'].forEach(id => {
+    const el = document.getElementById(id);
+    el.className = 'skeleton h-10 w-16 mt-2';
+    el.textContent = '';
+  });
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render(data) {
+  // Stats
+  document.getElementById('stat-games').className = 'stat-num';
+  document.getElementById('stat-games').textContent = data.totalGames;
+  document.getElementById('stat-students').className = 'stat-num';
+  document.getElementById('stat-students').textContent = data.totalStudents;
+  document.getElementById('stat-avg').className = 'stat-num';
+  document.getElementById('stat-avg').textContent = data.avgAll + '分';
+  const wordCount = Object.keys(data.wordHeatmap).length;
+  document.getElementById('stat-words').className = 'stat-num';
+  document.getElementById('stat-words').textContent = wordCount;
+
+  // Class selector
+  const sel = document.getElementById('classSelect');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">全部班級</option>';
+  data.classes.forEach(c => {
+    sel.innerHTML += `<option value="${c}" ${c === current ? 'selected' : ''}>${c}</option>`;
+  });
+
+  // Heatmap
+  renderHeatmap(data.wordHeatmap);
+
+  // Summary table
+  renderSummary(data.summary);
+
+  // Records
+  renderRecords(data.scores);
+}
+
+// ============================================================
+// HEATMAP
+// ============================================================
+function renderHeatmap(heatmap) {
+  const words = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const cn = { Sunday:'星期天', Monday:'星期一', Tuesday:'星期二', Wednesday:'星期三', Thursday:'星期四', Friday:'星期五', Saturday:'星期六' };
+  let maxCount = 1;
+  Object.values(heatmap).forEach(v => { if (v.total > maxCount) maxCount = v.total; });
+
+  let html = '';
+  words.forEach(w => {
+    const d = heatmap[w] || { total: 0, unsolved: 0 };
+    const rate = d.total > 0 ? Math.round(d.unsolved / d.total * 100) : 0;
+    const color = rate >= 50 ? '#dc2626' : rate >= 25 ? '#d97706' : '#059669';
+    const width = Math.max(d.total / maxCount * 100, 3);
+
+    html += `<div class="flex items-center gap-3">
+      <div class="w-20 text-right text-sm font-medium text-gray-700">${w}<br><span class="text-xs text-gray-400">${cn[w]}</span></div>
+      <div class="flex-1 bg-gray-100 rounded-full h-7 overflow-hidden">
+        <div class="heat-bar" style="width:${width}%;background:${color};">${rate}%</div>
+      </div>
+      <div class="text-xs text-gray-400 w-16">${d.unsolved}/${d.total}</div>
+    </div>`;
+  });
+
+  document.getElementById('heatmap').innerHTML = html || '<p class="text-sm text-gray-400">尚無錯字數據</p>';
+}
+
+// ============================================================
+// STUDENT SUMMARY
+// ============================================================
+function renderSummary(summary) {
+  if (!summary.length) {
+    document.getElementById('summaryTable').innerHTML = '<p class="text-sm text-gray-400">尚無學生資料</p>';
+    return;
+  }
+
+  let html = `<table><thead><tr>
+    <th>姓名</th><th>次數</th><th>平均分</th><th>最近</th>
+  </tr></thead><tbody>`;
+
+  summary.slice(0, 15).forEach(s => {
+    const badge = s.avgScore >= 27 ? 'badge-green' : s.avgScore >= 20 ? 'badge-yellow' : 'badge-red';
+    html += `<tr>
+      <td class="font-medium">${s.studentName}</td>
+      <td>${s.games}</td>
+      <td><span class="badge ${badge}">${s.avgScore}分</span></td>
+      <td class="text-xs text-gray-400">${s.lastPlayed}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('summaryTable').innerHTML = html;
+}
+
+// ============================================================
+// RECORDS
+// ============================================================
+function renderRecords(scores) {
+  if (!scores.length) {
+    document.getElementById('recordsTable').innerHTML = '<p class="text-sm text-gray-400">尚無遊戲紀錄</p>';
+    return;
+  }
+
+  const recent = [...scores].reverse().slice(0, 30);
+
+  let html = `<table><thead><tr>
+    <th>時間</th><th>班級</th><th>姓名</th><th>題</th><th>得分</th><th>正確率</th><th>耗時</th><th>建議加強</th>
+  </tr></thead><tbody>`;
+
+  recent.forEach(s => {
+    const pctNum = parseInt(s.pct) || 0;
+    const badge = pctNum >= 90 ? 'badge-green' : pctNum >= 70 ? 'badge-yellow' : 'badge-red';
+    html += `<tr>
+      <td class="text-xs text-gray-400">${s.time}</td>
+      <td>${s.className}</td>
+      <td class="font-medium">${s.studentName}</td>
+      <td>${s.questionCount}</td>
+      <td>${s.score}/${s.maxScore}</td>
+      <td><span class="badge ${badge}">${s.pct}</span></td>
+      <td class="text-xs">${s.timeSec}s</td>
+      <td class="text-xs text-gray-500 max-w-[200px] truncate block" title="${s.suggestion}">${s.suggestion || '-'}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('recordsTable').innerHTML = html;
+}
+
+// Init
+loadDashboard();
+</script>
+</body>
+</html>
