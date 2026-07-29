@@ -6,6 +6,7 @@
 <title>星期單字拼寫挑戰</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 * { box-sizing: border-box; }
 body { font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background: #f0f4ff; margin: 0; padding: 0; color: #333; }
@@ -117,6 +118,16 @@ body { font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background
 .mistake-card.fixed { background: #e8f5e9; border-color: #4caf50; }
 .mistake-highlight { background: #ffcdd2; color: #c62828; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
 .mistake-correct { background: #c8e6c9; color: #2e7d32; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+
+/* ===== QR Code ===== */
+.qr-card { background: #fff; border-radius: 14px; padding: 18px; margin: 30px auto 0; max-width: 340px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+.qr-card img { display: block; margin: 0 auto; border-radius: 10px; }
+.qr-url { display: inline-block; background: #f0f4ff; border: 1px solid #d4dff7; border-radius: 8px; padding: 6px 10px; font-size: 0.8em; word-break: break-all; color: #1d4e89; font-family: monospace; margin: 8px 0; }
+.qr-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.98); display: none; align-items: center; justify-content: center; flex-direction: column; z-index: 1000; cursor: zoom-out; }
+.qr-overlay.active { display: flex; }
+.qr-overlay img { width: min(300px, 70vw); height: auto; border-radius: 16px; }
+.qr-overlay .url { font-size: clamp(16px, 3vw, 28px); font-weight: bold; color: #1d4e89; margin-top: 20px; text-align: center; word-break: break-all; padding: 0 20px; }
+.qr-overlay .hint { color: #888; margin-top: 10px; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -142,9 +153,29 @@ body { font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background
     <button class="btn btn-purple btn-lg" onclick="goAIReviewFromEntry()">🤖 AI 先幫我複習</button>
     <button class="btn btn-blue btn-lg" onclick="startGameFromEntry()">⚡ 直接開始挑戰</button>
   </div>
-  <div style="margin-top:40px;">
+
+  <!-- QR Code 區塊 -->
+  <div class="qr-card">
+    <div style="font-size:1.1em;font-weight:bold;color:#1d4e89;margin-bottom:8px;">📱 學生掃碼直接玩</div>
+    <p style="font-size:0.85em;color:#666;margin-bottom:12px;">用平板或手機相機掃描，不用輸入網址</p>
+    <div id="qrcode"></div>
+    <div class="qr-url" id="qr-url"></div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-outline" onclick="showQrOverlay()" style="font-size:0.9em;padding:8px 16px;">放大投影</button>
+      <button class="btn btn-outline" onclick="copyQrUrl()" style="font-size:0.9em;padding:8px 16px;">複製網址</button>
+    </div>
+  </div>
+
+  <div style="margin-top:30px;">
     <a href="javascript:enterTeacher()" style="color:#ccc;font-size:0.75em;text-decoration:none;">👨‍🏫</a>
   </div>
+</div>
+
+<!-- QR 放大投影 -->
+<div id="qr-overlay" class="qr-overlay" onclick="hideQrOverlay()">
+  <div id="qrcode-big"></div>
+  <div class="url" id="qr-url-big"></div>
+  <div class="hint">點畫面任一處關閉</div>
 </div>
 
 <!-- ====== STUDENT LOGIN ====== -->
@@ -1348,11 +1379,65 @@ function launchConfetti() {
 }
 
 // ============================================================
+// QR CODE
+// ============================================================
+let qrCodeObj = null;
+let qrBigObj = null;
+const GAME_URL = 'https://annethequeenbee-maker.github.io/spelling-challenge/';
+
+function initQR() {
+  $('#qr-url').textContent = GAME_URL;
+  $('#qr-url-big').textContent = GAME_URL;
+  // 清除舊 QR
+  $('#qrcode').innerHTML = '';
+  $('#qrcode-big').innerHTML = '';
+  qrCodeObj = new QRCode($('#qrcode'), {
+    text: GAME_URL,
+    width: 160,
+    height: 160,
+    colorDark: '#1d4e89',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+  qrBigObj = new QRCode($('#qrcode-big'), {
+    text: GAME_URL,
+    width: 320,
+    height: 320,
+    colorDark: '#1d4e89',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+function showQrOverlay() {
+  $('#qr-overlay').classList.add('active');
+}
+
+function hideQrOverlay() {
+  $('#qr-overlay').classList.remove('active');
+}
+
+function copyQrUrl() {
+  navigator.clipboard.writeText(GAME_URL).then(() => {
+    alert('網址已複製！');
+  }).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = GAME_URL;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    alert('網址已複製！');
+  });
+}
+
+// ============================================================
 // INIT
 // ============================================================
 function init() {
   showScreen('entry');
   selectQC(3);
+  initQR();
 }
 init();
 </script>
