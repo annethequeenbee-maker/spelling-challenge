@@ -857,20 +857,9 @@ function startStage1() {
   const options = shuffle([w, ...data.distractors]);
   state.stage1Options = options;
 
-  $('#s1-options').innerHTML = options.map((opt, i) => {
-    const oData = WORD_DATA[opt];
-    return oData ? `
-      <div class="option-card" data-idx="${i}" onclick="selectStage1Option(${i})">
-        <div style="font-size:2.2em;line-height:1;margin-bottom:6px;">${oData.icon}</div>
-        <div style="font-size:1.1em;">${opt}</div>
-        <div style="font-size:0.7em;color:#888;margin-top:2px;">${oData.cn}</div>
-      </div>
-    ` : `
-      <div class="option-card" data-idx="${i}" onclick="selectStage1Option(${i})">
-        <div style="font-size:1.1em;">${opt}</div>
-      </div>
-    `;
-  }).join('');
+  $('#s1-options').innerHTML = options.map((opt, i) => `
+    <div class="option-card" data-idx="${i}" onclick="selectStage1Option(${i})">${opt}</div>
+  `).join('');
 
   // 自動播放發音
   setTimeout(() => speakWord(w), 400);
