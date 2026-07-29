@@ -468,7 +468,7 @@ async function saveScore() {
       mistakes: JSON.stringify(state.mistakes),
     });
     try {
-      await fetch(GAS_SHEET_URL + '?' + qs.toString(), { method: 'POST' });
+      await fetch(GAS_SHEET_URL + '?' + qs.toString(), { method: 'GET' });
     } catch(e) { console.error('Sheet sync:', e); }
   }
 
